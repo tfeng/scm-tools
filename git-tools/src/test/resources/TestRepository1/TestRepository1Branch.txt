@@ -1,0 +1,12 @@
+*** README.txt @ cce305b7664f32699f472185674a307f69c1d59e ***
+This is the readme file of test-repo.
+
+*** java/Test.java @ 00864fb18d3b0148b1b992a53ee539258a987d12 ***
+public class Test {
+  public static void main(String[] args) {
+    System.out.println("This is a test in test-branch.");
+  }
+}
+
+*** java/Test.properties @ f6334b6ccd7e840de3042d3446e877eadcad4cbf ***
+TestKey = TestValue

@@ -1,0 +1,9 @@
+*** README.txt @ cce305b7664f32699f472185674a307f69c1d59e ***
+This is the readme file of test-repo.
+
+*** java/Test.java @ f12a2834f1e2ec4078987125e2f8065db7bbcaa6 ***
+public class Test {
+  public static void main(String[] args) {
+    System.out.println("This is a test.");
+  }
+}
