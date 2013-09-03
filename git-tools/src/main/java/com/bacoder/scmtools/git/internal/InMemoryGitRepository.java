@@ -17,6 +17,7 @@ package com.bacoder.scmtools.git.internal;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
@@ -76,6 +77,14 @@ public class InMemoryGitRepository extends SCMRepository<GitEntry, GitEntryProce
       throw new ProcessingException(e);
     } catch (InternalRuntimeException e) {
       throw new ProcessingException(e.getCause());
+    }
+  }
+
+  public void refresh() throws InitializationException {
+    try {
+      command.fetch();
+    } catch (GitAPIException | IOException | URISyntaxException e) {
+      throw new InitializationException("Unable to refresh Git repository", e);
     }
   }
 }

@@ -77,9 +77,14 @@ class InMemoryCloneCommand extends CloneCommand {
     return repository;
   }
 
-  public void init() throws GitAPIException, URISyntaxException, IOException {
+  public void init() throws GitAPIException, IOException, URISyntaxException {
     URIish u = new URIish(uri);
     repository = init(u);
+    fetchResult = fetch(repository, u);
+  }
+
+  public void fetch() throws GitAPIException, IOException, URISyntaxException {
+    URIish u = new URIish(uri);
     fetchResult = fetch(repository, u);
   }
 
