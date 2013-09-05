@@ -36,7 +36,7 @@ import com.bacoder.scmtools.git.GitEntry;
 import com.bacoder.scmtools.git.GitEntryProcessor;
 import com.google.common.collect.Lists;
 
-class InMemoryDirCacheCheckout extends DirCacheCheckout {
+class CloneAndProcessDirCacheCheckout extends DirCacheCheckout {
 
   private DirCache dirCache;
   private String pathPrefix;
@@ -44,7 +44,7 @@ class InMemoryDirCacheCheckout extends DirCacheCheckout {
   private Repository repository;
   private byte[] submodulesConfig;
 
-  public InMemoryDirCacheCheckout(Repository repository, DirCache dirCache,
+  public CloneAndProcessDirCacheCheckout(Repository repository, DirCache dirCache,
       ObjectId mergeCommitTree, String pathPrefix) throws IOException {
     super(repository, dirCache, mergeCommitTree);
     this.repository = repository;

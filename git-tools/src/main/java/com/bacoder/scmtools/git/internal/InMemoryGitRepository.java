@@ -20,27 +20,30 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 
 import com.bacoder.scmtools.core.InitializationException;
 import com.bacoder.scmtools.core.InternalRuntimeException;
 import com.bacoder.scmtools.core.ProcessingException;
 import com.bacoder.scmtools.core.SCMRepository;
+import com.bacoder.scmtools.git.GitConfig;
 import com.bacoder.scmtools.git.GitEntry;
 import com.bacoder.scmtools.git.GitEntryProcessor;
 
 public class InMemoryGitRepository extends SCMRepository<GitEntry, GitEntryProcessor> {
 
-  private InMemoryCloneCommand command;
+  private CloneAndProcessCommand command;
 
   public InMemoryGitRepository(URI uri) throws InitializationException {
+    this(uri, new GitConfig());
+  }
+
+  public InMemoryGitRepository(URI uri, GitConfig config)
+      throws InitializationException {
     super(uri);
 
     try {
-      command = new InMemoryCloneCommand();
+      command = new CloneAndProcessCommand(config);
+      command.setProgressMonitor(config.getProgressMonitor());
       command.setURI(uri.toString());
       command.init();
     } catch (Throwable t) {
@@ -50,29 +53,10 @@ public class InMemoryGitRepository extends SCMRepository<GitEntry, GitEntryProce
 
   @Override
   public void process(GitEntryProcessor processor) throws ProcessingException {
-    process(Constants.HEAD, processor);
-  }
-
-  public void process(String branch, GitEntryProcessor processor) throws ProcessingException {
-    InMemoryCloneCommand command = this.command.createNewCommand();
-    command.setBranch(branch);
+    CloneAndProcessCommand command = this.command.createNewCommand();
     command.setProcessor(processor);
     try {
       command.checkout();
-    } catch (IOException | GitAPIException e) {
-      throw new ProcessingException(e);
-    } catch (InternalRuntimeException e) {
-      throw new ProcessingException(e.getCause());
-    }
-  }
-
-  public void process(ObjectId commit, GitEntryProcessor processor) throws ProcessingException {
-    InMemoryCloneCommand command = this.command.createNewCommand();
-
-    command.setProcessor(processor);
-    try {
-      RevCommit revCommit = new RevWalk(command.getRepository()).parseCommit(commit);
-      command.doCheckout(command.getRepository(), revCommit);
     } catch (IOException | GitAPIException e) {
       throw new ProcessingException(e);
     } catch (InternalRuntimeException e) {

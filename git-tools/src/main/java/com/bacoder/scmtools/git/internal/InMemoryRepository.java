@@ -40,6 +40,13 @@ class InMemoryRepository extends org.eclipse.jgit.internal.storage.dfs.InMemoryR
   }
 
   @Override
+  public DirCache lockDirCache() throws NoWorkTreeException, CorruptObjectException, IOException {
+    DirCache dc = new InMemoryDirCache(getIndexFile(), getFS());
+    dc.setRepository(this);
+    return dc;
+  }
+
+  @Override
   public DirCache readDirCache() throws NoWorkTreeException, CorruptObjectException,
       IOException {
     DirCache dc = new InMemoryDirCache(getIndexFile(), getFS());

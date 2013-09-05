@@ -26,18 +26,21 @@ import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.URIish;
 
+import com.bacoder.scmtools.git.GitConfig;
 import com.bacoder.scmtools.git.GitEntryProcessor;
 
-class InMemoryCloneCommand extends CloneCommand {
+class CloneAndProcessCommand extends CloneCommand {
 
   private boolean cloneSubmodules;
+
+  private GitConfig config;
 
   private FetchResult fetchResult;
 
@@ -49,23 +52,34 @@ class InMemoryCloneCommand extends CloneCommand {
 
   private byte[] submodulesConfig;
 
-  public InMemoryCloneCommand() {
-    this(null);
+  public CloneAndProcessCommand(GitConfig config) {
+    this(null, config);
   }
 
-  public InMemoryCloneCommand(String pathPrefix) {
+  public CloneAndProcessCommand(String pathPrefix, GitConfig config) {
     this.pathPrefix = pathPrefix;
+    setConfig(config);
   }
 
   public void checkout() throws IOException, GitAPIException {
-    checkout(repository, fetchResult);
+    if (config.getCommitRevision() == null) {
+      checkout(repository, fetchResult);
+    } else {
+      RevCommit revCommit = new RevWalk(repository).parseCommit(config.getCommitRevision());
+      doCheckout(repository, revCommit);
+    }
   }
 
-  public InMemoryCloneCommand createNewCommand() {
-    InMemoryCloneCommand newCommand = new InMemoryCloneCommand(pathPrefix);
+  public CloneAndProcessCommand createNewCommand() {
+    CloneAndProcessCommand newCommand = new CloneAndProcessCommand(pathPrefix, config);
     newCommand.repository = repository;
     newCommand.fetchResult = fetchResult;
     return newCommand;
+  }
+
+  public void fetch() throws GitAPIException, IOException, URISyntaxException {
+    URIish u = new URIish(uri);
+    fetchResult = fetch(repository, u);
   }
 
   public String getBranch() {
@@ -83,32 +97,36 @@ class InMemoryCloneCommand extends CloneCommand {
     fetchResult = fetch(repository, u);
   }
 
-  public void fetch() throws GitAPIException, IOException, URISyntaxException {
-    URIish u = new URIish(uri);
-    fetchResult = fetch(repository, u);
+  public boolean isInMemory() {
+    return directory == null;
   }
 
   @Override
-  public InMemoryCloneCommand setCloneSubmodules(boolean cloneSubmodules) {
+  public CloneAndProcessCommand setCloneSubmodules(boolean cloneSubmodules) {
     super.setCloneSubmodules(cloneSubmodules);
     this.cloneSubmodules = cloneSubmodules;
     return this;
   }
 
-  public InMemoryCloneCommand setProcessor(GitEntryProcessor processor) {
+  public CloneAndProcessCommand setProcessor(GitEntryProcessor processor) {
     this.processor = processor;
     return this;
   }
 
   @Override
   protected void cloneSubmodules(Repository repository) throws IOException, GitAPIException {
-    SubmoduleWalk generator = new InMemorySubmoduleWalk(repository, submodulesConfig);
-    try {
-      DirCache index = repository.readDirCache();
-      generator.setTree(new DirCacheIterator(index));
-    } catch (IOException e) {
-      generator.release();
-      throw e;
+    SubmoduleWalk generator;
+    if (isInMemory()) {
+      generator = new InMemorySubmoduleWalk(repository, submodulesConfig);
+      try {
+        DirCache index = repository.readDirCache();
+        generator.setTree(new DirCacheIterator(index));
+      } catch (IOException e) {
+        generator.release();
+        throw e;
+      }
+    } else {
+      generator = SubmoduleWalk.forIndex(repository);
     }
 
     try {
@@ -120,7 +138,8 @@ class InMemoryCloneCommand extends CloneCommand {
         String path = generator.getPath();
         String url = generator.getRemoteUrl();
 
-        InMemoryCloneCommand command = new InMemoryCloneCommand(path).setProcessor(processor);
+        CloneAndProcessCommand command =
+            new CloneAndProcessCommand(path, config).setProcessor(processor);
         command.setURI(url).setCloneSubmodules(true);
         command.call();
       }
@@ -129,29 +148,19 @@ class InMemoryCloneCommand extends CloneCommand {
     }
   }
 
-  protected void doCheckout(final Repository repository, ObjectId objectId)
-      throws IOException, GitAPIException {
-    InMemoryDirCache dirCache = new InMemoryDirCache(repository.getIndexFile(), repository.getFS());
-    dirCache.setRepository(repository);
-    InMemoryDirCacheCheckout checkout =
-        new InMemoryDirCacheCheckout(repository, dirCache, objectId, pathPrefix);
-    checkout.setProcessor(processor);
-    checkout.checkout();
-
-    submodulesConfig = checkout.getSubmodulesConfig();
-    if (cloneSubmodules) {
-      cloneSubmodules(repository);
-    }
-  }
-
   @Override
   protected void doCheckout(final Repository repository, RevCommit commit)
       throws MissingObjectException, IncorrectObjectTypeException,
       IOException, GitAPIException {
-    InMemoryDirCache dirCache = new InMemoryDirCache(repository.getIndexFile(), repository.getFS());
-    dirCache.setRepository(repository);
-    InMemoryDirCacheCheckout checkout =
-        new InMemoryDirCacheCheckout(repository, dirCache, commit.getTree(), pathPrefix);
+    DirCache dirCache;
+    if (isInMemory()) {
+      dirCache = new InMemoryDirCache(repository.getIndexFile(), repository.getFS());
+      dirCache.setRepository(repository);
+    } else {
+      dirCache = repository.lockDirCache();
+    }
+    CloneAndProcessDirCacheCheckout checkout =
+        new CloneAndProcessDirCacheCheckout(repository, dirCache, commit.getTree(), pathPrefix);
     checkout.setProcessor(processor);
     checkout.checkout();
 
@@ -163,6 +172,18 @@ class InMemoryCloneCommand extends CloneCommand {
 
   @Override
   protected Repository init(URIish u) throws GitAPIException {
-    return new InMemoryRepository(new DfsRepositoryDescription());
+    if (isInMemory()) {
+      return new InMemoryRepository(new DfsRepositoryDescription());
+    } else {
+      return super.init(u);
+    }
+  }
+
+  protected void setConfig(GitConfig config) {
+    this.config = config;
+    setBranch(config.getBranch());
+    setCloneSubmodules(config.getIncludeSubmodule());
+    setDirectory(config.getDirectory());
+    setProgressMonitor(config.getProgressMonitor());
   }
 }

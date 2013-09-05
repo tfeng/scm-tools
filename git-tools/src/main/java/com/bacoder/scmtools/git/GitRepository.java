@@ -25,4 +25,8 @@ public class GitRepository extends InMemoryGitRepository {
   public GitRepository(URI uri) throws InitializationException {
     super(uri);
   }
+
+  public GitRepository(URI uri, GitConfig config) throws InitializationException {
+    super(uri, config);
+  }
 }
