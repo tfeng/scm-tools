@@ -168,7 +168,7 @@
     <skip.sources>true</skip.sources>
 
     <guava.version>14.0.1</guava.version>
-    <jgit.version>3.1.0-SNAPSHOT</jgit.version>
+    <jgit.version>3.1.0-201309071158-r</jgit.version>
     <license-maven-plugin.version>2.2</license-maven-plugin.version>
     <log4j.version>1.2.17</log4j.version>
     <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
