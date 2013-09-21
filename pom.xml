@@ -8,7 +8,7 @@
   <groupId>com.bacoder.scm-tools</groupId>
   <artifactId>parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
   <name>parent</name>
   <url>http://bacoder.com</url>
 
@@ -167,9 +167,9 @@
     <skip.javadoc>true</skip.javadoc>
     <skip.sources>true</skip.sources>
 
-    <guava.version>14.0.1</guava.version>
+    <guava.version>15.0</guava.version>
     <jgit.version>3.1.0-201309071158-r</jgit.version>
-    <license-maven-plugin.version>2.2</license-maven-plugin.version>
+    <license-maven-plugin.version>2.5</license-maven-plugin.version>
     <log4j.version>1.2.17</log4j.version>
     <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
     <maven-deploy-plugin.version>2.7</maven-deploy-plugin.version>
@@ -177,7 +177,7 @@
     <maven-gpg-plugin.version>1.4</maven-gpg-plugin.version>
     <maven-source-plugin.version>2.2.1</maven-source-plugin.version>
     <maven-surefire-plugin.version>2.16</maven-surefire-plugin.version>
-    <testng.version>6.8.5</testng.version>
+    <testng.version>6.8.7</testng.version>
   </properties>
 
   <distributionManagement>
